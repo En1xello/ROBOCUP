@@ -39,12 +39,20 @@ def spin_L():
 
 def left_wall_moving():
     while robot.step(timestep) != -1:
-        print(getColor())
-        print(distance_sens[0].getValue(), '\t', distance_sens[5].getValue(),'\t', \
-            distance_sens[1].getValue(), '\t',\
-            distance_sens[2].getValue(), '\t', distance_sens[4].getValue(),\
-            '\t',distance_sens[3].getValue())
+        img1 = camera1R.getImage()
+        img2 = camera2L.getImage()
+        img3 = camera3F.getImage()
+        helpR = detectVisualSimple(img1, camera1R)
+        helpL = detectVisualSimple(img2, camera2L)
+        helpF = detectVisualSimple(img3, camera3F)
 
+        #print(getColor())
+        #print(distance_sens[0].getValue(), '\t', distance_sens[5].getValue(),'\t', \
+        #    distance_sens[1].getValue(), '\t',\
+        #    distance_sens[2].getValue(), '\t', distance_sens[4].getValue(),\
+        #    '\t',distance_sens[3].getValue(), '\t', x, '\t', helpR, '\t', helpL, '\t', helpF)
+
+        print(len(helpL))
         left_wall = distance_sens[0].getValue() < 0.08
         front_wall_L = distance_sens[1].getValue() < 0.08
         left_corner = distance_sens[5].getValue() < 0.08
@@ -78,6 +86,26 @@ def left_wall_moving():
         motor_L.setVelocity(left_speed)
         motor_R.setVelocity(right_speed)
 
+def detectVisualSimple(image_data, camera):
+
+	coords_list = []
+	img = np.array(np.frombuffer(image_data, np.uint8).reshape((camera.getHeight(), camera.getWidth(), 4)))
+	img[:,:,2] = np.zeros([img.shape[0], img.shape[1]])
+
+
+	gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+	thresh = cv2.threshold(gray, 140, 255, cv2.THRESH_BINARY)[1]
+
+	contours, h = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+	for c in contours:
+		if cv2.contourArea(c) > 1000:
+			coords = list(c[0][0])
+			coords_list.append(coords)
+			print("Victim at x="+str(coords[0])+" y="+str(coords[1]))
+
+	return coords_list
+
+
 
 
 
@@ -110,10 +138,29 @@ for i in range(6):
 colour_camera = robot.getCamera("colour_sensor")
 colour_camera.enable(timestep)
 
+camera1R = robot.getDevice("camera1")
+camera2L = robot.getDevice("camera2")
+camera3F = robot.getDevice("camera3")
+camera1R.enable(timestep)
+camera2L.enable(timestep)
+camera3F.enable(timestep)
+
+Gps = robot.getDevice("gps")
+Gps.enable(timestep)
+
 #####################################################################
 
 
 while robot.step(timestep) != -1:
+    x = Gps.getValues()[0]
+    #img1 = camera1R.getImage()
+    #img2 = camera2L.getImage()
+    #img3 = camera3F.getImage()
+    #helpR = detectVisualSimple(img1, camera1R)
+    #helpL = detectVisualSimple(img2, camera2L)
+    #helpF = detectVisualSimple(img3, camera3F)
+    ##print(type(img1))
+    #print(len(helpR))
     if (distance_sens[0].getValue() > distance_sens[3].getValue()) or\
           distance_sens[0].getValue() == distance_sens[3].getValue():
         motor_L.setVelocity(max_velocity)
